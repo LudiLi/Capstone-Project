@@ -1,7 +1,10 @@
 package ludil.cmu.edu.dataserviceapplication;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -9,6 +12,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
 import android.widget.TextView;
 
 import org.apache.http.HttpResponse;
@@ -22,6 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONArray;
 
 import java.util.List;
+import java.util.ArrayList;
 
 //nest class to store the string result as well as the status
 class Result {
@@ -45,6 +51,9 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //initializeWiFiListener();
+
         TextView textView = (TextView)findViewById(R.id.textView);
         Result r = new Result();
         String username = "1231234";
@@ -63,12 +72,11 @@ public class MainActivity extends AppCompatActivity {
                 textView.append("\n We are now collecting your location information for safety reasons.");
             }
             int i = 0;
-//            while(shareLocRes == 200) {
-//                shareLocRes = doPostDataInfo(r, value, accessToken);
-//                Thread.sleep(5000);
-//                System.out.println(i++);
-//            }
-            initializeWiFiListener();
+            while(shareLocRes == 200) {
+                shareLocRes = doPostDataInfo(r, value, accessToken);
+                Thread.sleep(5000);
+                System.out.println(i++);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -112,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public int doPostDataInfo(Result r, Double value, String accessToken) throws Exception {
-        Long time = System.currentTimeMillis()/1000;
+        Long time = System.currentTimeMillis() / 1000;
         System.out.println("%%%%%%%%" + time);
         JSONArray array = new JSONArray();
         JSONObject json = new JSONObject();
@@ -131,17 +139,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // scan all the wifi access point and find the strongest one
-    private void initializeWiFiListener(){
+    public void initializeWiFiListener(){
         System.out.println("executing initializeWiFiListener");
+
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 0x12345);
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 12345);
         }
     }
 
     public void onRequestPermissionsResult(final int requestCode, final String[] permissions, final int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 0x12345) {
+        if (requestCode == 12345) {
+            System.out.println("lalalalalala");
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                System.out.println("22222222222222222222");
                 // Permission granted.
                 String connectivity_context = Context.WIFI_SERVICE;
                 final WifiManager wifi = (WifiManager)getSystemService(connectivity_context);
