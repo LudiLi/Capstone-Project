@@ -2,6 +2,8 @@ package edu.cmu.capstone16fall.pe.dataservice;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +17,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 import java.util.UUID;
 
 public class SendLocationActivity extends AppCompatActivity {
@@ -26,7 +29,6 @@ public class SendLocationActivity extends AppCompatActivity {
     private SensorIDSingleton sensorIDSingleton = SensorIDSingleton.getInstance();
     private String accessToken;
     private String sensorID;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +46,7 @@ public class SendLocationActivity extends AppCompatActivity {
         sensorIDSingleton.setup(this, uniqueID, accessToken);
         sensorID = sensorIDSingleton.getSensorID();
         System.out.println("Sensor ID " + sensorID);
+
 
         sendLocation();
 
@@ -65,6 +68,7 @@ public class SendLocationActivity extends AppCompatActivity {
     }
 
     private void sendLocation() {
+
         final Handler handler = new Handler();
         handler.post(new Runnable() {
             @Override
@@ -72,11 +76,30 @@ public class SendLocationActivity extends AppCompatActivity {
                 if (!accessTokenSingleton.isValidAccessToken()) {
                     accessToken = accessTokenSingleton.getAccessToken();
                 }
-                new SendLocationInfo().execute("test");
+                String temp = getWifiID();
+                if (!temp.equals("error")) {
+                    new SendLocationInfo().execute(getWifiID());
+                }
 
                 handler.postDelayed(this, TIME_INTERVAL);
             }
         });
+    }
+
+    private String getWifiID() {
+        int maxLevel = Integer.MIN_VALUE;
+        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        List<ScanResult> list = wifiManager.getScanResults();
+        ScanResult maxResult = null;
+        for (ScanResult result : list) {
+            if (result.level > maxLevel) {
+                maxResult = result;
+            }
+        }
+        if (maxResult == null) {
+            return "error";
+        }
+        return maxResult.BSSID;
     }
 
     private class SendLocationInfo extends AsyncTask<String, Void, String> {
