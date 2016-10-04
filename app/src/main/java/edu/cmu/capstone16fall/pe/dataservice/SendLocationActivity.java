@@ -93,6 +93,7 @@ public class SendLocationActivity extends AppCompatActivity {
         ScanResult maxResult = null;
         for (ScanResult result : list) {
             if (result.level > maxLevel) {
+                maxLevel = result.level;
                 maxResult = result;
             }
         }
