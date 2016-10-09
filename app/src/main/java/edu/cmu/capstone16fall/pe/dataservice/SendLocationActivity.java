@@ -2,6 +2,8 @@ package edu.cmu.capstone16fall.pe.dataservice;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
@@ -15,11 +17,17 @@ import org.json.JSONObject;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
+import javax.net.ssl.HttpsURLConnection;
+
+/**
+ * The app start from here. Create AccessTokenSingleton object and SendLocationActivity object.
+ * Send location information with the strongest signal every 5s.
+ *
+ */
 public class SendLocationActivity extends AppCompatActivity {
     private static String uniqueID;
     private static final String PREF_UNIQUE_ID = "PREF_UNIQUE_ID";
@@ -35,7 +43,19 @@ public class SendLocationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_send_location);
 
         getID(this);
-        System.out.println("start getting accessToken");
+
+        //Check network connection. If no network, exit and print out error.
+        System.out.println("Check network connection");
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo == null || !networkInfo.isConnected()) {
+            System.out.println("No network connection available.");
+            System.exit(0);
+        }
+
+        //Get access token
+        System.out.println("Start getting accessToken");
         accessTokenSingleton.setContext(this);
         accessToken = accessTokenSingleton.getAccessToken();
         System.out.println("Access Token" + accessToken);
@@ -43,15 +63,23 @@ public class SendLocationActivity extends AppCompatActivity {
         System.out.println("Token is valid or not " + accessTokenSingleton.isValidAccessToken());
         System.out.println("android id " + uniqueID);
 
+        //Get sensor ID
         sensorIDSingleton.setup(this, uniqueID, accessToken);
         sensorID = sensorIDSingleton.getSensorID();
         System.out.println("Sensor ID " + sensorID);
 
-
+        //Send location every 5s
+        System.out.println("Start sending location info to server");
         sendLocation();
 
     }
 
+    /**
+     * Generate a random ID for the first time using our app and store it locally
+     *
+     * @param context
+     * @return the random ID
+     */
     public synchronized static String getID(Context context) {
         if (uniqueID == null) {
             SharedPreferences sharedPrefs = context.getSharedPreferences(
@@ -67,6 +95,10 @@ public class SendLocationActivity extends AppCompatActivity {
         return uniqueID;
     }
 
+    /**
+     * Create a thread to send location information every 5s.
+     *
+     */
     private void sendLocation() {
 
         final Handler handler = new Handler();
@@ -86,6 +118,11 @@ public class SendLocationActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Get the strongest wifi information
+     *
+     * @return the strongest wifi information
+     */
     private String getWifiID() {
         int maxLevel = Integer.MIN_VALUE;
         WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -101,12 +138,17 @@ public class SendLocationActivity extends AppCompatActivity {
             return "error";
         }
         return maxResult.BSSID;
+        //return maxResult.SSID;
     }
 
+    /**
+     * Http Post location information.
+     *
+     */
     private class SendLocationInfo extends AsyncTask<String, Void, String> {
+        HttpsURLConnection urlConnection;
         @Override
         protected String doInBackground(String... args) {
-            HttpURLConnection urlConnection;
             int responseCode = 0;
             String result;
 
@@ -119,8 +161,10 @@ public class SendLocationActivity extends AppCompatActivity {
                 array.put(json);
                 String jsonData = array.toString();
                 URL url = new URL(URL);
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setDoInput(true);
+                urlConnection = (HttpsURLConnection) url.openConnection();
+                urlConnection.setReadTimeout(10000 /* milliseconds */);
+                urlConnection.setConnectTimeout(15000 /* milliseconds */);
+                urlConnection.setDoOutput(true);
                 urlConnection.setRequestMethod("POST");
                 urlConnection.setRequestProperty("Content-type", "application/json");
                 urlConnection.setRequestProperty("Authorization", "Bearer " + accessToken);
@@ -134,6 +178,8 @@ public class SendLocationActivity extends AppCompatActivity {
 
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                urlConnection.disconnect();
             }
             result = "Response Code " + Integer.toString(responseCode) + " Wifi " + args[0];
 

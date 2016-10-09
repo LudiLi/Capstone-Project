@@ -20,6 +20,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
 
+import javax.net.ssl.HttpsURLConnection;
+
 /**
  * Created by Zheng on 10/4/16.
  */
@@ -83,16 +85,18 @@ public class SensorIDSingleton {
         JSONObject array = new JSONObject();
         StringBuilder result = new StringBuilder();
         String tempSensorID = "0";
+        URL url = new URL(myurl);
+        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
         try {
             array.put("name", uniqueID);
             array.put("identifier", "SensorTag3");
             array.put("building", "Wean hall");
             json.put("data", array);
             String jsonData = json.toString();
-            URL url = new URL(myurl);
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setDoOutput(true);
             urlConnection.setDoInput(true);
+            urlConnection.setReadTimeout(10000 /* milliseconds */);
+            urlConnection.setConnectTimeout(15000 /* milliseconds */);
             urlConnection.setRequestMethod("POST");
             urlConnection.setRequestProperty("Content-type", "application/json");
             urlConnection.setRequestProperty("Accept", "application/json");
@@ -122,6 +126,8 @@ public class SensorIDSingleton {
 
         } catch(Exception e) {
             e.printStackTrace();
+        } finally {
+            urlConnection.disconnect();
         }
 
         try {
