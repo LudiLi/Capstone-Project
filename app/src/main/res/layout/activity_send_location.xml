@@ -11,7 +11,8 @@
     tools:context="edu.cmu.capstone16fall.pe.dataservice.SendLocationActivity">
 
     <TextView
+        android:id="@+id/wifi_info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text="Wifi access points and strength:" />
 </RelativeLayout>

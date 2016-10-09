@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -96,21 +97,35 @@ public class SendLocationActivity extends AppCompatActivity {
     }
 
     /**
-     * Create a thread to send location information every 5s.
+     * Create a thread to send location information and display all the wifi information to screen
+     * every 5s.
      *
      */
     private void sendLocation() {
-
         final Handler handler = new Handler();
+
+
         handler.post(new Runnable() {
             @Override
             public void run() {
+                TextView displayWifi = (TextView) findViewById(R.id.wifi_info);
+
                 if (!accessTokenSingleton.isValidAccessToken()) {
                     accessToken = accessTokenSingleton.getAccessToken();
                 }
-                String temp = getWifiID();
-                if (!temp.equals("error")) {
-                    new SendLocationInfo().execute(getWifiID());
+
+                WifiReturnType wifiResult = getWifiID();
+                if (wifiResult.maxScanResult != null) {
+                    new SendLocationInfo().execute(wifiResult.maxScanResult.BSSID);
+                    StringBuffer sb = new StringBuffer();
+                    for (ScanResult sc : wifiResult.scanResult) {
+                        sb.append(sc.SSID + "  " + sc.level + "  " + sc.BSSID + "\n");
+                    }
+                    displayWifi.setText(sb.toString());
+                    displayWifi.invalidate();
+
+                } else {
+                    System.out.println("Not detect wifi signal");
                 }
 
                 handler.postDelayed(this, TIME_INTERVAL);
@@ -119,11 +134,12 @@ public class SendLocationActivity extends AppCompatActivity {
     }
 
     /**
-     * Get the strongest wifi information
+     * Save all detected wifi information and the strongest wifi information
      *
-     * @return the strongest wifi information
+     * @return wifi information
      */
-    private String getWifiID() {
+    private WifiReturnType getWifiID() {
+        //-100 means lowest value (no signal at all), and 0 means extremely good signal (100%)
         int maxLevel = Integer.MIN_VALUE;
         WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> list = wifiManager.getScanResults();
@@ -134,10 +150,12 @@ public class SendLocationActivity extends AppCompatActivity {
                 maxResult = result;
             }
         }
-        if (maxResult == null) {
-            return "error";
-        }
-        return maxResult.BSSID;
+
+        WifiReturnType returnType = new WifiReturnType(list.toArray(new ScanResult[list.size()]),
+                maxResult);
+
+
+        return returnType;
         //return maxResult.SSID;
     }
 
