@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -38,6 +39,7 @@ public class SendLocationActivity extends AppCompatActivity {
     private SensorIDSingleton sensorIDSingleton = SensorIDSingleton.getInstance();
     private String accessToken;
     private String sensorID;
+    private ScanResult scanResult;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -117,12 +119,13 @@ public class SendLocationActivity extends AppCompatActivity {
                 WifiReturnType wifiResult = getWifiID();
                 if (wifiResult.maxScanResult != null) {
                     new SendLocationInfo().execute(wifiResult.maxScanResult.BSSID);
-                    StringBuffer sb = new StringBuffer();
+                    StringBuffer sb = new StringBuffer("Wifi around:" + "\n");
                     for (ScanResult sc : wifiResult.scanResult) {
                         sb.append(sc.SSID + "  " + sc.level + "  " + sc.BSSID + "\n");
                     }
                     displayWifi.setText(sb.toString());
                     displayWifi.invalidate();
+                    scanResult = wifiResult.maxScanResult;
 
                 } else {
                     System.out.println("Not detect wifi signal");
@@ -134,7 +137,7 @@ public class SendLocationActivity extends AppCompatActivity {
     }
 
     /**
-     * Save all detected wifi information and the strongest wifi information
+     * Save all wifi information and the strongest wifi information
      *
      * @return wifi information
      */
@@ -156,11 +159,10 @@ public class SendLocationActivity extends AppCompatActivity {
 
 
         return returnType;
-        //return maxResult.SSID;
     }
 
     /**
-     * Http Post location information.
+     * Send Http Post request to post location information to Building Depot server.
      *
      */
     private class SendLocationInfo extends AsyncTask<String, Void, String> {
@@ -209,4 +211,26 @@ public class SendLocationActivity extends AppCompatActivity {
             System.out.println(result);
         }
     }
+
+    /**
+     * When user click the latest_wifi_info button, it will display the wifi information that our
+     * app just sent to user.
+     *
+     * @param view
+     */
+    public void onClickViewLatestWifi(View view) {
+        TextView wifiSent = (TextView) findViewById(R.id.latest_wifi_info);
+        if (scanResult != null) {
+            String result = scanResult.SSID + "  " + scanResult.level + "  " + scanResult.BSSID +
+                    "  " + scanResult.timestamp;
+            wifiSent.setText("Recent Wifi information: \n" + result);
+        }
+        else {
+            wifiSent.setText("No Wifi information");
+        }
+        wifiSent.invalidate();
+
+    }
+
+
 }

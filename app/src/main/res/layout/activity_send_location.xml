@@ -15,4 +15,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Wifi access points and strength:" />
+
+    <TextView
+        android:text=""
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/latest_wifi"
+        android:layout_marginTop="17dp"
+        android:id="@+id/latest_wifi_info"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:id="@+id/latest_wifi"
+        android:text="View Wifi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickViewLatestWifi"
+        android:layout_below="@+id/wifi_info"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="11dp" />
 </RelativeLayout>

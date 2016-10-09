@@ -23,6 +23,8 @@ import java.util.concurrent.ExecutionException;
 import javax.net.ssl.HttpsURLConnection;
 
 /**
+ * SensorIDSingleton can get sensor Id from server, store sensor Id locally.
+ *
  * Created by Zheng on 10/4/16.
  */
 public class SensorIDSingleton {
@@ -41,20 +43,33 @@ public class SensorIDSingleton {
 
     private SensorIDSingleton() {}
 
+    /**
+     * Main activity will call this method to get sensor ID either from local storage or generate
+     * a new one.
+     *
+     * @return sensor Id
+     */
     public String getSensorID() {
         sharedPref = context.getSharedPreferences(SENSOR_ID, Context.MODE_PRIVATE);
-        String tempToken = sharedPref.getString(SENSOR_ID, null);
+        String tempSensorID = sharedPref.getString(SENSOR_ID, null);
+
         if (sensorID != null) {
             return sensorID;
-        } else if (tempToken != null) {
-            sensorID = tempToken;
         } else {
-            sensorID = createSensorID();
+            if (tempSensorID != null) {
+                sensorID = tempSensorID;
+            } else {
+                sensorID = createSensorID();
+            }
         }
-
         return sensorID;
     }
 
+    /**
+     * Create a sensor ID and store it locally
+     *
+     * @return sensor Id
+     */
     public String createSensorID() {
         GetSensorID doGetSensorID = new GetSensorID();
         try {
@@ -74,12 +89,28 @@ public class SensorIDSingleton {
         return tempSensorID;
     }
 
+    /**
+     * Main activity will call this method.
+     * Use context to access local storage. Use uniqueId to generate sensor Id. Use accessToken to
+     * set up connection.
+     *
+     * @param context
+     * @param uniqueID
+     * @param accessToken
+     */
     public void setup(Context context, String uniqueID, String accessToken) {
         this.context = context;
         this.accessToken = accessToken;
         this.uniqueID = uniqueID;
     }
 
+    /**
+     * Skeleton of the Http request to get Sensor ID
+     *
+     * @param myurl the url of the server
+     * @return sensor Id
+     * @throws IOException
+     */
     private String fetchSensorID(String myurl) throws IOException {
         JSONObject json = new JSONObject();
         JSONObject array = new JSONObject();
@@ -139,6 +170,10 @@ public class SensorIDSingleton {
         return tempSensorID;
     }
 
+    /**
+     * Send Async request which will call fetchSensorID() to complete the request.
+     *
+     */
     private class GetSensorID extends AsyncTask<String, Void, String> {
 
         String tempSensorID;
